@@ -189,13 +189,12 @@ read_chunks (char* buf)
 
 		memcpy(&chunk->length, buf, 4);
 		chunk->length = ntohl(chunk->length);
-		chunk->data = (unsigned char *)malloc(chunk->length);
-		chunk->name = (unsigned char *)malloc(4);
+		chunk->name = (unsigned char *)g_malloc(4);
 
 		buf += 4;
 		memcpy(chunk->name, buf, 4);
 		buf += 4;
-		chunk->data = (unsigned char *)malloc(chunk->length);
+		chunk->data = (unsigned char *)g_malloc(chunk->length);
 		memcpy(chunk->data, buf, chunk->length);
 		buf += chunk->length;
 		memcpy(&chunk->crc, buf, 4);
@@ -281,6 +280,7 @@ process_chunks (GList *chunks)
 		deflateInit(&defstrm, Z_DEFAULT_COMPRESSION);
 		deflate(&defstrm, Z_FINISH);
 
+		g_free (chunk->data);
 		chunk->data = deflatedbuf;
 		chunk->length = defstrm.total_out;
 		chunk->crc = mycrc(chunk->name, chunk->data, chunk->length);
