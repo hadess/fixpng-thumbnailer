@@ -345,13 +345,13 @@ write_png(GList *chunks, guint idat_idx)
 				g_message ("adding idat %d", idat_seen - 1);
 			}
 
-			g_byte_array_append (data, &tmp, 4);
+			g_byte_array_append (data, (const guint8 *) &tmp, 4);
 			g_byte_array_append (data, chunk->name, 4);
 
 			if (chunk->length > 0)
 				g_byte_array_append (data, chunk->data, chunk->length);
 
-			g_byte_array_append (data, &crc, 4);
+			g_byte_array_append (data, (const guint8 *) &crc, 4);
 		}
 
 		if (!memcmp(chunk->name, endchunk, 4)){
