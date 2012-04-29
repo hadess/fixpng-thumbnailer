@@ -51,8 +51,8 @@ unsigned char endchunk[4] = {0x49, 0x45, 0x4e, 0x44}; // IEND
 unsigned char cgbichunk[4] = {0x43, 0x67, 0x42, 0x49}; // CgBI
 
 void die(char *why);
-int check_png_header(unsigned char *);
-static GList *read_chunks (unsigned char* buf);
+int check_png_header(char *);
+static GList *read_chunks (char* buf);
 void process_chunks(GList *chunks);
 static GdkPixbuf *write_png(GList *chunks, guint idat_idx);
 unsigned long mycrc(unsigned char *, unsigned char *, int);
@@ -73,7 +73,7 @@ get_num_idat (GList *chunks)
 
 int main(int argc, char **argv){
 	char *buf;
-	GList *chunks, *pixbufs, *l;
+	GList *chunks, *pixbufs;
 	GError *error = NULL;
 	guint num_idat, i;
 
@@ -157,12 +157,12 @@ int main(int argc, char **argv){
 	return 0;
 }
 
-int check_png_header(unsigned char *buf){
+int check_png_header(char *buf){
 	return (!(int) memcmp(buf, pngheader, 8));
 }
 
 static GList *
-read_chunks (unsigned char* buf)
+read_chunks (char* buf)
 {
 	GList *chunks = NULL;
 	int i = 0;
@@ -206,8 +206,6 @@ read_chunks (unsigned char* buf)
 
 void process_chunks(GList *chunks){
 	GList *l;
-	int i;
-	unsigned char* outbuf;
 
 	// Poke at any IDAT chunks and de/recompress them
 	for (l = chunks; l != NULL; l = l->next) {
@@ -332,8 +330,6 @@ write_png(GList *chunks, guint idat_idx)
 		crc = htonl(chunk->crc);
 
 		if (memcmp(chunk->name, cgbichunk, 4)){ // Anything but a CgBI
-			int ret;
-
 			if (memcmp(chunk->name, "IDAT", 4) == 0) {
 				idat_seen++;
 
