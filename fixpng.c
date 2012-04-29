@@ -7,8 +7,7 @@
  *
  *
  *  This tool will convert iPhone PNGs from its weird, non-compatible format to
- *  A format any PNG-compatible application will read. It will not flip the R
- *  and B channels.
+ *  A format any PNG-compatible application will read.
  *
  *  In summary, this tool takes an input png uncompresses the IDAT chunk, recompresses
  *  it in a PNG-compatible way and then writes everything except the, so far,
