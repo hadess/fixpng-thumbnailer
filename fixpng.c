@@ -283,6 +283,7 @@ process_chunks (GList *chunks)
 		chunk->data = deflatedbuf;
 		chunk->length = defstrm.total_out;
 		chunk->crc = mycrc(chunk->name, chunk->data, chunk->length);
+		deflateEnd (&defstrm);
 
 		g_free (inflatedbuf);
 #if 0
