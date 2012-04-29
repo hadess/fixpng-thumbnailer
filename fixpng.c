@@ -244,13 +244,13 @@ fix_channels (GdkPixbuf *pixbuf)
 	int img_width = gdk_pixbuf_get_width(pixbuf);
 	int img_height = gdk_pixbuf_get_height(pixbuf);
 	int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
-	int pix_stride = 4; // Fixed for GdkPixbuf's in cb_image_annotate
+	int pix_stride = gdk_pixbuf_get_bits_per_sample (pixbuf);
 	guint8 *buf = gdk_pixbuf_get_pixels(pixbuf);
 	int col_idx, row_idx;
 
-	for (row_idx=0; row_idx<img_height; row_idx++) {
+	for (row_idx = 0; row_idx < img_height; row_idx++) {
 		guint8 *row = buf + row_idx * row_stride;
-		for (col_idx=0; col_idx<img_width; col_idx++) {
+		for (col_idx = 0; col_idx < img_width; col_idx++) {
 			guchar *p;
 			guchar r, b;
 
@@ -263,12 +263,6 @@ fix_channels (GdkPixbuf *pixbuf)
 			//FIXME fixup premultiplied alpha
 		}
 	}
-#if 0
-	bpp = gdk_pixbuf_get_bits_per_sample (pixbuf);
-	data = gdk_pixbuf_get_pixels_with_length (pixbuf, &len);
-	for (i = 0; i < len; i += bpp) {
-	}
-#endif
 }
 
 static GdkPixbuf *
