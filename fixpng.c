@@ -93,10 +93,12 @@ main (int argc, char **argv)
 	}
 
 	if (!check_png_header(buf)){
+		g_free (buf);
 		die("This is not a PNG file. I require a PNG file!\n");
 	}
 
 	chunks = read_chunks(buf);
+	g_free (buf);
 	process_chunks(chunks);
 
 	num_idat = get_num_idat (chunks);
