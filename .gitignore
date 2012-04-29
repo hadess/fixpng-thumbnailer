@@ -1,0 +1,16 @@
+.deps
+INSTALL
+Makefile
+Makefile.in
+aclocal.m4
+autom4te.cache/
+compile
+config.log
+config.status
+configure
+depcomp
+gnome-fixpng-thumbnailer
+gnome-fixpng-thumbnailer.thumbnailer
+*.o
+install-sh
+missing
