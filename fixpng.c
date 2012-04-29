@@ -247,7 +247,7 @@ fix_channels (GdkPixbuf *pixbuf)
 	int img_width = gdk_pixbuf_get_width(pixbuf);
 	int img_height = gdk_pixbuf_get_height(pixbuf);
 	int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
-	int pix_stride = gdk_pixbuf_get_bits_per_sample (pixbuf);
+	int pix_stride = 4;
 	guint8 *buf = gdk_pixbuf_get_pixels(pixbuf);
 	int col_idx, row_idx;
 
@@ -258,6 +258,8 @@ fix_channels (GdkPixbuf *pixbuf)
 			guchar r, b;
 
 			p = row + col_idx * pix_stride;
+
+			/* Swap R and B */
 			r = *p;
 			b = *(p + 2);
 			*(p + 2) = r;
