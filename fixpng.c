@@ -71,6 +71,13 @@ get_num_idat (GList *chunks)
 	return num_idats;
 }
 
+static void
+chunk_free (png_chunk *chunk)
+{
+	g_free (chunk->data);
+	g_free (chunk);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -112,7 +119,7 @@ main (int argc, char **argv)
 	pixbufs = g_list_reverse (pixbufs);
 
 	/* And discard all the chunks */
-	g_list_free_full (chunks, (GDestroyNotify) g_free);
+	g_list_free_full (chunks, (GDestroyNotify) chunk_free);
 
 	if (num_idat == 2) {
 		GdkPixbuf *final;
@@ -260,7 +267,7 @@ process_chunks (GList *chunks)
 		inflateEnd(&infstrm);
 
 		// Now deflate again, the regular, PNG-compatible, way
-		deflatedbuf = (unsigned char *)malloc(BUFSIZE);
+		deflatedbuf = (unsigned char *)g_malloc(BUFSIZE);
 
 		defstrm.zalloc = Z_NULL;
 		defstrm.zfree = Z_NULL;
