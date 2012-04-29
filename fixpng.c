@@ -54,13 +54,30 @@ void die(char *why);
 int check_png_header(unsigned char *);
 static GList *read_chunks (unsigned char* buf);
 void process_chunks(GList *chunks);
-void write_png(GList *chunks, char *filename);
+static GdkPixbuf *write_png(GList *chunks, guint idat_idx);
 unsigned long mycrc(unsigned char *, unsigned char *, int);
+
+static guint
+get_num_idat (GList *chunks)
+{
+	GList *l;
+	guint num_idats = 0;
+
+	for (l = chunks; l != NULL; l = l->next) {
+		png_chunk *chunk = l->data;
+		if (memcmp(chunk->name, datachunk, 4) == 0)
+			num_idats++;
+	}
+	return num_idats;
+}
 
 int main(int argc, char **argv){
 	char *buf;
-	GList *chunks, *l;
+	GList *chunks, *pixbufs, *l;
 	GError *error = NULL;
+	guint num_idat, i;
+
+	g_type_init ();
 
 	if (argc!=3) {
 		printf("Usage: %s <input> <output>\n\n",argv[0]);
@@ -79,7 +96,26 @@ int main(int argc, char **argv){
 
 	chunks = read_chunks(buf);
 	process_chunks(chunks);
-	write_png(chunks, argv[2]);
+
+	num_idat = get_num_idat (chunks);
+	g_message ("numidat %d", num_idat);
+	pixbufs = NULL;
+	for (i = 0; i < num_idat; i++) {
+		GdkPixbuf *pixbuf;
+
+		pixbuf = write_png(chunks, i);
+		pixbufs = g_list_prepend (pixbufs, pixbuf);
+	}
+
+	//FIXME do something with the pixbufs
+	for (l = pixbufs, i = 0; l != NULL; l = l->next, i++) {
+		GdkPixbuf *pixbuf = l->data;
+		char *filename;
+
+		filename = g_strdup_printf ("test%d.png", i);
+		gdk_pixbuf_save (pixbuf, filename, "png", NULL, NULL);
+		g_free (filename);
+	}
 }
 
 int check_png_header(unsigned char *buf){
@@ -202,48 +238,82 @@ void process_chunks(GList *chunks){
 	}
 }
 
-void write_png(GList *chunks, char *filename)
+static void
+fix_channels (GdkPixbuf *pixbuf)
 {
-	int fd, i = 0;
+	int img_width = gdk_pixbuf_get_width(pixbuf);
+	int img_height = gdk_pixbuf_get_height(pixbuf);
+	int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
+	int pix_stride = 4; // Fixed for GdkPixbuf's in cb_image_annotate
+	guint8 *buf = gdk_pixbuf_get_pixels(pixbuf);
+	int col_idx, row_idx;
+
+	for (row_idx=0; row_idx<img_height; row_idx++) {
+		guint8 *row = buf + row_idx * row_stride;
+		for (col_idx=0; col_idx<img_width; col_idx++) {
+			guchar *p;
+			guchar r, b;
+
+			p = row + col_idx * pix_stride;
+			r = *p;
+			b = *(p + 2);
+			*(p + 2) = r;
+			*p  = b;
+
+			//FIXME fixup premultiplied alpha
+		}
+	}
+#if 0
+	bpp = gdk_pixbuf_get_bits_per_sample (pixbuf);
+	data = gdk_pixbuf_get_pixels_with_length (pixbuf, &len);
+	for (i = 0; i < len; i += bpp) {
+	}
+#endif
+}
+
+static GdkPixbuf *
+write_png(GList *chunks, guint idat_idx)
+{
 	GList *l;
+	GByteArray *data;
+	GdkPixbufLoader *loader;
+	GdkPixbuf *pixbuf;
+	guint idat_seen = 0;
 
-	fd = open(filename, O_CREAT|O_RDWR, S_IRUSR|S_IWUSR);
-	write(fd, pngheader, 8);
-
-	int did_idat = 0;
+	data = g_byte_array_new ();
+	g_byte_array_append (data, pngheader, 8);
 
 	for (l = chunks; l != NULL; l = l->next) {
 		png_chunk *chunk;
 		int tmp;
+		guint crc;
 
 		chunk = l->data;
 
 		tmp = htonl(chunk->length);
-		chunk->crc = htonl(chunk->crc);
+		crc = htonl(chunk->crc);
 
 		if (memcmp(chunk->name, cgbichunk, 4)){ // Anything but a CgBI
 			int ret;
 
 			if (memcmp(chunk->name, "IDAT", 4) == 0) {
-				if (did_idat == 1) {
+				idat_seen++;
+
+				if (idat_seen - 1 != idat_idx) {
+					g_message ("ignoring IDAT %d", idat_seen);
 					continue;
 				}
-				did_idat = 1;
+
+				g_message ("adding idat %d", idat_seen);
 			}
 
-			ret = write(fd, &tmp, 4);
-			ret = write(fd, chunk->name, 4);
+			g_byte_array_append (data, &tmp, 4);
+			g_byte_array_append (data, chunk->name, 4);
 
-			if (chunk->length > 0){
-				printf("About to write data to fd length %d\n", chunk->length);
-				ret = write(fd, chunk->data, chunk->length);
-				if (!ret){
-					printf("%c%c%c%c size %d\n", chunk->name[0], chunk->name[1], chunk->name[2], chunk->name[3], chunk->length);
-					perror("write");
-				}
-			}
+			if (chunk->length > 0)
+				g_byte_array_append (data, chunk->data, chunk->length);
 
-			ret = write(fd, &chunk->crc, 4);
+			g_byte_array_append (data, &crc, 4);
 		}
 
 		if (!memcmp(chunk->name, endchunk, 4)){
@@ -251,7 +321,26 @@ void write_png(GList *chunks, char *filename)
 		}
 	}
 
-	close(fd);
+#if 0
+	char *filename = g_strdup_printf ("raw-test%d.png", idat_idx);
+	g_file_set_contents (filename, data->data, data->len, NULL);
+	g_message ("wrote file %s", filename);
+	g_free (filename);
+#endif
+
+	//FIXME add some debug here
+	loader = gdk_pixbuf_loader_new_with_type ("png", NULL);
+	gdk_pixbuf_loader_write (loader, data->data, data->len, NULL);
+	gdk_pixbuf_loader_close (loader, NULL);
+	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
+	g_object_ref (pixbuf);
+	g_object_unref (loader);
+	g_byte_array_free (data, FALSE);
+
+	/* Reverse channels */
+	fix_channels (pixbuf);
+
+	return pixbuf;
 }
 
 void die(char *why){
