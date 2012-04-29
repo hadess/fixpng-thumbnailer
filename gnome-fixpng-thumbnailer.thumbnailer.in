@@ -1,4 +1,4 @@
 [Thumbnailer Entry]
 TryExec=@bindir@/gnome-fixpng-thumbnailer
 Exec=@bindir@/gnome-fixpng-thumbnailer -s %s %u %o
-MimeType=image/png;
+MimeType=image/x-apple-ios-png;
