@@ -106,6 +106,7 @@ int main(int argc, char **argv){
 		pixbuf = write_png(chunks, i);
 		pixbufs = g_list_prepend (pixbufs, pixbuf);
 	}
+	pixbufs = g_list_reverse (pixbufs);
 
 	//FIXME do something with the pixbufs
 	for (l = pixbufs, i = 0; l != NULL; l = l->next, i++) {
