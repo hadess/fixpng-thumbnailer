@@ -207,7 +207,10 @@ void process_chunks(){
 			chunk->length = defstrm.total_out;
 			chunk->crc = mycrc(chunk->name, chunk->data, chunk->length);
 			
-			printf("New length: %d, new CRC: %08x\n", chunk->length, chunk->crc);
+			printf("Chunk: %c%c%c%c, new length: %d, new CRC: %08x\n",
+			       chunk->name[0], chunk->name[1],
+			       chunk->name[2], chunk->name[3],
+			       chunk->length, chunk->crc);
 			
 		} else if (!memcmp(chunk->name, endchunk, 4)){
 			break;
