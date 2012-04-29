@@ -1,0 +1,10 @@
+gnome-fixpng-thumbnailer thumbnails a very modified version
+of PNG files used by Apple in their iOS build system.
+
+More information about the format is available from:
+http://coding.scribd.com/2011/09/07/shrink-your-ios-app-by-turning-png-compression-up-to-11/
+and:
+http://iphonedevelopment.blogspot.co.uk/2008/10/iphone-optimized-pngs.html
+
+The code is based on "iphone-fixpng.tgz", from unknown writers, but
+licensed under the GPL v2.
