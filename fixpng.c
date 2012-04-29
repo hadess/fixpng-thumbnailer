@@ -240,7 +240,7 @@ process_chunks (GList *chunks)
 		if (memcmp(chunk->name, datachunk, 4) != 0)
 			continue;
 
-		inflatedbuf = (unsigned char *)malloc(BUFSIZE);
+		inflatedbuf = (unsigned char *)g_malloc(BUFSIZE);
 		infstrm.zalloc = Z_NULL;
 		infstrm.zfree = Z_NULL;
 		infstrm.opaque = Z_NULL;
@@ -284,6 +284,7 @@ process_chunks (GList *chunks)
 		chunk->length = defstrm.total_out;
 		chunk->crc = mycrc(chunk->name, chunk->data, chunk->length);
 
+		g_free (inflatedbuf);
 #if 0
 		printf("Chunk: %c%c%c%c, new length: %d, new CRC: %08x\n",
 		       chunk->name[0], chunk->name[1],
