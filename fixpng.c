@@ -98,7 +98,6 @@ int main(int argc, char **argv){
 	process_chunks(chunks);
 
 	num_idat = get_num_idat (chunks);
-	g_message ("numidat %d", num_idat);
 	pixbufs = NULL;
 	for (i = 0; i < num_idat; i++) {
 		GdkPixbuf *pixbuf;
@@ -150,8 +149,10 @@ read_chunks (unsigned char* buf)
 		chunk->crc = ntohl(chunk->crc);
 		buf += 4;
 
+#if 0
 		printf("Found chunk: %c%c%c%c\n", chunk->name[0], chunk->name[1], chunk->name[2], chunk->name[3]);
 		printf("Length: %d, CRC32: %08x\n", chunk->length, chunk->crc);
+#endif
 
 		chunks = g_list_prepend (chunks, chunk);
 
@@ -188,7 +189,6 @@ void process_chunks(GList *chunks){
 			continue;
 
 		inflatedbuf = (unsigned char *)malloc(BUFSIZE);
-		printf("processing IDAT chunk %d\n", i);
 		infstrm.zalloc = Z_NULL;
 		infstrm.zfree = Z_NULL;
 		infstrm.opaque = Z_NULL;
@@ -232,10 +232,12 @@ void process_chunks(GList *chunks){
 		chunk->length = defstrm.total_out;
 		chunk->crc = mycrc(chunk->name, chunk->data, chunk->length);
 
+#if 0
 		printf("Chunk: %c%c%c%c, new length: %d, new CRC: %08x\n",
 		       chunk->name[0], chunk->name[1],
 		       chunk->name[2], chunk->name[3],
 		       chunk->length, chunk->crc);
+#endif
 	}
 }
 
@@ -295,11 +297,11 @@ write_png(GList *chunks, guint idat_idx)
 				idat_seen++;
 
 				if (idat_seen - 1 != idat_idx) {
-					g_message ("ignoring IDAT %d", idat_seen);
+					g_message ("ignoring IDAT %d", idat_seen - 1);
 					continue;
 				}
 
-				g_message ("adding idat %d", idat_seen);
+				g_message ("adding idat %d", idat_seen - 1);
 			}
 
 			g_byte_array_append (data, &tmp, 4);
