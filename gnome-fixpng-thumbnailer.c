@@ -56,6 +56,17 @@ static void process_chunks(GList *chunks);
 static GdkPixbuf *write_png(GList *chunks, guint idat_idx);
 static unsigned long mycrc(unsigned char *, unsigned char *, int);
 
+static int output_size = 64;
+static gboolean g_fatal_warnings = FALSE;
+static char **filenames = NULL;
+
+static const GOptionEntry entries[] = {
+	{ "size", 's', 0, G_OPTION_ARG_INT, &output_size, "Size of the thumbnail in pixels", NULL },
+	{"g-fatal-warnings", 0, 0, G_OPTION_ARG_NONE, &g_fatal_warnings, "Make all warnings fatal", NULL},
+	{ G_OPTION_REMAINING, '\0', 0, G_OPTION_ARG_FILENAME_ARRAY, &filenames, NULL, "[FILE...]" },
+	{ NULL }
+};
+
 static guint
 get_num_idat (GList *chunks)
 {
@@ -78,26 +89,64 @@ chunk_free (png_chunk *chunk)
 	g_free (chunk);
 }
 
+static char *
+get_file_path (const char *uri)
+{
+	char *ret;
+	GFile *file;
+
+	file = g_file_new_for_commandline_arg (uri);
+	ret = g_file_get_path (file);
+	g_object_unref (file);
+
+	return ret;
+}
+
 int
 main (int argc, char **argv)
 {
 	char *buf;
+	char *input;
+	const char *output;
 	GList *chunks, *pixbufs;
+	GOptionContext *context;
 	GError *error = NULL;
 	guint num_idat, i;
 
+	/* Options parsing */
+	context = g_option_context_new ("Thumbnail iOS-optimised PNGs");
+	g_option_context_add_main_entries (context, entries, NULL);
 	g_type_init ();
 
-	if (argc!=3) {
-		printf("Usage: %s <input> <output>\n\n",argv[0]);
-		exit(1);
+	if (g_option_context_parse (context, &argc, &argv, &error) == FALSE) {
+		g_warning ("Couldn't parse command-line options: %s", error->message);
+		g_error_free (error);
+		return 1;
 	}
 
-	if (g_file_get_contents (argv[1], &buf, NULL, &error) == FALSE) {
+	/* Set fatal warnings if required */
+	if (g_fatal_warnings) {
+		GLogLevelFlags fatal_mask;
+
+		fatal_mask = g_log_set_always_fatal (G_LOG_FATAL_MASK);
+		fatal_mask |= G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL;
+		g_log_set_always_fatal (fatal_mask);
+	}
+
+	if (filenames == NULL || g_strv_length (filenames) != 2) {
+		g_print ("Expects an input and an output file\n");
+		return 1;
+	}
+
+	input = get_file_path (filenames[0]);
+	output = filenames[1];
+
+	if (g_file_get_contents (input, &buf, NULL, &error) == FALSE) {
 		g_warning ("Couldn't read file '%s': %s", argv[1], error->message);
 		g_error_free (error);
 		return 1;
 	}
+	g_free (input);
 
 	if (!check_png_header(buf)){
 		g_free (buf);
@@ -144,12 +193,12 @@ main (int argc, char **argv)
 				      final,
 				      0, gdk_pixbuf_get_height (first) / 2);
 
-		gdk_pixbuf_save (final, argv[2], "png", NULL, NULL);
+		gdk_pixbuf_save (final, output, "png", NULL, NULL);
 		g_object_unref (final);
 	} else {
 		GdkPixbuf *pixbuf = pixbufs->data;
 
-		gdk_pixbuf_save (pixbuf, argv[2], "png", NULL, NULL);
+		gdk_pixbuf_save (pixbuf, output, "png", NULL, NULL);
 	}
 
 #if 0
