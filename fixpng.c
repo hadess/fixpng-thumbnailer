@@ -107,7 +107,41 @@ int main(int argc, char **argv){
 	}
 	pixbufs = g_list_reverse (pixbufs);
 
-	//FIXME do something with the pixbufs
+	/* And discard all the chunks */
+	g_list_free_full (chunks, (GDestroyNotify) g_free);
+
+	if (num_idat == 2) {
+		GdkPixbuf *final;
+		GdkPixbuf *first = pixbufs->data;
+		GdkPixbuf *second = pixbufs->next->data;
+
+		final = gdk_pixbuf_new (GDK_COLORSPACE_RGB,
+					TRUE,
+					8,
+					gdk_pixbuf_get_width (first),
+					gdk_pixbuf_get_height (first));
+		gdk_pixbuf_copy_area (first,
+				      0, 0,
+				      gdk_pixbuf_get_width (first),
+				      gdk_pixbuf_get_height (first) / 2,
+				      final,
+				      0, 0);
+		gdk_pixbuf_copy_area (second,
+				      0, 0,
+				      gdk_pixbuf_get_width (first),
+				      gdk_pixbuf_get_height (first) / 2,
+				      final,
+				      0, gdk_pixbuf_get_height (first) / 2);
+
+		gdk_pixbuf_save (final, argv[2], "png", NULL, NULL);
+		g_object_unref (final);
+	} else {
+		GdkPixbuf *pixbuf = pixbufs->data;
+
+		gdk_pixbuf_save (pixbuf, argv[2], "png", NULL, NULL);
+	}
+
+#if 0
 	for (l = pixbufs, i = 0; l != NULL; l = l->next, i++) {
 		GdkPixbuf *pixbuf = l->data;
 		char *filename;
@@ -116,6 +150,11 @@ int main(int argc, char **argv){
 		gdk_pixbuf_save (pixbuf, filename, "png", NULL, NULL);
 		g_free (filename);
 	}
+#endif
+
+	g_list_free_full (pixbufs, (GDestroyNotify) g_object_unref);
+
+	return 0;
 }
 
 int check_png_header(unsigned char *buf){
