@@ -74,6 +74,7 @@ get_num_idat (GList *chunks)
 static void
 chunk_free (png_chunk *chunk)
 {
+	g_free (chunk->name);
 	g_free (chunk->data);
 	g_free (chunk);
 }
