@@ -387,7 +387,7 @@ write_png(GList *chunks, guint idat_idx)
 	pixbuf = gdk_pixbuf_loader_get_pixbuf (loader);
 	g_object_ref (pixbuf);
 	g_object_unref (loader);
-	g_byte_array_free (data, FALSE);
+	g_byte_array_free (data, TRUE);
 
 	/* Reverse channels */
 	fix_channels (pixbuf);
