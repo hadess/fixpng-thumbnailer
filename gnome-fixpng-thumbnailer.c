@@ -350,12 +350,8 @@ write_png(GList *chunks, guint idat_idx)
 			if (memcmp(chunk->name, "IDAT", 4) == 0) {
 				idat_seen++;
 
-				if (idat_seen - 1 != idat_idx) {
-					g_message ("ignoring IDAT %d", idat_seen - 1);
+				if (idat_seen - 1 != idat_idx)
 					continue;
-				}
-
-				g_message ("adding idat %d", idat_seen - 1);
 			}
 
 			g_byte_array_append (data, (const guint8 *) &tmp, 4);
