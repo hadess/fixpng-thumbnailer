@@ -34,6 +34,8 @@
 #include <zlib.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
+#include "gnome-thumbnailer-skeleton.h"
+
 #define MAX_CHUNKS 20
 #define BUFSIZE 1048576 // 1MB buffer size
 
@@ -55,17 +57,6 @@ static GList *read_chunks (char* buf);
 static void process_chunks(GList *chunks);
 static GdkPixbuf *write_png(GList *chunks, guint idat_idx);
 static unsigned long mycrc(unsigned char *, unsigned char *, int);
-
-static int output_size = 64;
-static gboolean g_fatal_warnings = FALSE;
-static char **filenames = NULL;
-
-static const GOptionEntry entries[] = {
-	{ "size", 's', 0, G_OPTION_ARG_INT, &output_size, "Size of the thumbnail in pixels", NULL },
-	{"g-fatal-warnings", 0, 0, G_OPTION_ARG_NONE, &g_fatal_warnings, "Make all warnings fatal", NULL},
-	{ G_OPTION_REMAINING, '\0', 0, G_OPTION_ARG_FILENAME_ARRAY, &filenames, NULL, "[FILE...]" },
-	{ NULL }
-};
 
 static guint
 get_num_idat (GList *chunks)
@@ -102,55 +93,25 @@ get_file_path (const char *uri)
 	return ret;
 }
 
-int
-main (int argc, char **argv)
+GdkPixbuf *
+file_to_pixbuf (const char  *path,
+		GError     **error)
 {
 	char *buf;
 	char *input;
 	const char *output;
 	GList *chunks, *pixbufs;
 	GOptionContext *context;
-	GError *error = NULL;
 	guint num_idat, i;
+	GdkPixbuf *pixbuf;
 
-	/* Options parsing */
-	context = g_option_context_new ("Thumbnail iOS-optimised PNGs");
-	g_option_context_add_main_entries (context, entries, NULL);
-	g_type_init ();
-
-	if (g_option_context_parse (context, &argc, &argv, &error) == FALSE) {
-		g_warning ("Couldn't parse command-line options: %s", error->message);
-		g_error_free (error);
-		return 1;
-	}
-
-	/* Set fatal warnings if required */
-	if (g_fatal_warnings) {
-		GLogLevelFlags fatal_mask;
-
-		fatal_mask = g_log_set_always_fatal (G_LOG_FATAL_MASK);
-		fatal_mask |= G_LOG_LEVEL_WARNING | G_LOG_LEVEL_CRITICAL;
-		g_log_set_always_fatal (fatal_mask);
-	}
-
-	if (filenames == NULL || g_strv_length (filenames) != 2) {
-		g_print ("Expects an input and an output file\n");
-		return 1;
-	}
-
-	input = get_file_path (filenames[0]);
-	output = filenames[1];
-
-	if (g_file_get_contents (input, &buf, NULL, &error) == FALSE) {
-		g_warning ("Couldn't read file '%s': %s", argv[1], error->message);
-		g_error_free (error);
-		return 1;
-	}
-	g_free (input);
+	if (g_file_get_contents (path, &buf, NULL, error) == FALSE)
+		return NULL;
 
 	if (!check_png_header(buf)){
+		g_set_error_literal (error, 0, 0, "This is not a PNG file. I require a PNG file!");
 		g_free (buf);
-		die("This is not a PNG file. I require a PNG file!\n");
+		return FALSE;
 	}
 
 	chunks = read_chunks(buf);
@@ -193,12 +154,9 @@ main (int argc, char **argv)
 				      final,
 				      0, gdk_pixbuf_get_height (first) / 2);
 
-		gdk_pixbuf_save (final, output, "png", NULL, NULL);
-		g_object_unref (final);
+		pixbuf = final;
 	} else {
-		GdkPixbuf *pixbuf = pixbufs->data;
-
-		gdk_pixbuf_save (pixbuf, output, "png", NULL, NULL);
+		pixbuf = g_object_ref (pixbufs->data);
 	}
 
 #if 0
@@ -214,7 +172,7 @@ main (int argc, char **argv)
 
 	g_list_free_full (pixbufs, (GDestroyNotify) g_object_unref);
 
-	return 0;
+	return pixbuf;
 }
 
 static int
