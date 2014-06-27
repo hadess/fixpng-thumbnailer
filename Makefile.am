@@ -13,6 +13,21 @@ thumbnailer_DATA = gnome-fixpng-thumbnailer.thumbnailer
 gnome-fixpng-thumbnailer.thumbnailer: gnome-fixpng-thumbnailer.thumbnailer.in Makefile
 	$(AM_V_GEN) $(SED) -e "s|\@bindir\@|$(bindir)|" $< > $@
 
-EXTRA_DIST = gnome-fixpng-thumbnailer.thumbnailer.in AUTHORS COPYING README
+mimedir = $(datadir)/mime/packages
+mime_DATA = image-x-apple-ios-png.xml
+
+install-data-hook:
+if ENABLE_UPDATE_MIMEDB
+	$(UPDATE_MIME_DATABASE) "$(DESTDIR)$(datadir)/mime"
+endif
+
+uninstall-hook:
+if ENABLE_UPDATE_MIMEDB
+	$(UPDATE_MIME_DATABASE) "$(DESTDIR)$(datadir)/mime"
+endif
+
+DISTCHECK_CONFIGURE_FLAGS = --disable-update-mimedb
+
+EXTRA_DIST = gnome-fixpng-thumbnailer.thumbnailer.in AUTHORS COPYING README image-x-apple-ios-png.xml
 
 CLEANFILES = gnome-fixpng-thumbnailer.thumbnailer

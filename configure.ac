@@ -14,5 +14,13 @@ AM_PROG_CC_C_O
 
 PKG_CHECK_MODULES(THUMBNAILER, gdk-pixbuf-2.0 gio-2.0 zlib)
 
+AC_PATH_PROG(UPDATE_MIME_DATABASE, update-mime-database, no)
+
+AC_ARG_ENABLE(update-mimedb,
+	      AS_HELP_STRING([--disable-update-mimedb],
+			     [disable the update-mime-database after install [default=no]]),,
+			     enable_update_mimedb=yes)
+AM_CONDITIONAL(ENABLE_UPDATE_MIMEDB, test x$enable_update_mimedb = xyes)
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
